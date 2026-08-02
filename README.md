@@ -46,7 +46,7 @@ No third-party frameworks or routers are used.
 ### Clone the Repository
 
 ```bash
-git clone 
+git clone https://github.com/jevitapearl/TaskForge.git
 cd taskforge
 ```
 
@@ -147,55 +147,6 @@ curl -X POST \
   -H "Content-Type: application/json" \
   -d '{"message":"Hello from cURL"}'
 ```
-
----
-
-## Learning Roadmap
-
-This project will gradually evolve into a production-ready backend.
-
-### Phase 1
-
-* HTTP Server
-* Routing
-* JSON APIs
-* Request/Response lifecycle
-
-### Phase 2
-
-* CRUD Task API
-* In-memory storage
-* RESTful endpoints
-
-### Phase 3
-
-* Project restructuring
-* Packages
-* Handlers
-* Services
-* Repositories
-
-### Phase 4
-
-* PostgreSQL
-* SQL
-* Database migrations
-
-### Phase 5
-
-* User authentication
-* Password hashing
-* JWT
-* Middleware
-
-### Phase 6
-
-* Logging
-* Configuration
-* Docker
-* Testing
-* Graceful shutdown
-* Deployment
 
 ---
 
