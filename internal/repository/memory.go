@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/jevitapearl/TaskForge/internal/models"
@@ -9,6 +10,7 @@ import (
 
 type MemoryRepository struct {
 	tasks []models.Task
+	mu    sync.RWMutex
 }
 
 func New() *MemoryRepository {
@@ -27,18 +29,28 @@ func (m *MemoryRepository) findTask(id string) (*models.Task, int) {
 }
 
 func (m *MemoryRepository) GetAll() []models.Task {
-	return m.tasks
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	response := make([]models.Task, len(m.tasks))
+	copy(response, m.tasks)
+	return response
 }
 
-func (m *MemoryRepository) GetByID(id string) (*models.Task, error) {
+func (m *MemoryRepository) GetByID(id string) (models.Task, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
 	entry, i := m.findTask(id)
+
 	if i < 0 {
-		return &models.Task{}, errors.New("Could not find entry")
+		return models.Task{}, errors.New("Could not find entry")
 	}
-	return entry, nil
+	return *entry, nil
 }
 
 func (m *MemoryRepository) Create(task models.TaskPayload) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.tasks = append(m.tasks, models.Task{
 		ID:        uuid.NewString(),
 		Title:     task.Title,
@@ -48,17 +60,23 @@ func (m *MemoryRepository) Create(task models.TaskPayload) error {
 }
 
 func (m *MemoryRepository) Update(id string, new models.UpdatePayload) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	_, i := m.findTask(id)
 
 	if i < 0 {
 		return errors.New("Could not find entry")
 	}
+
 	m.tasks[i].Title = new.Title
 	m.tasks[i].Completed = new.Completed
 	return nil
 }
 
 func (m *MemoryRepository) Delete(id string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	_, i := m.findTask(id)
 	if i < 0 {
 		return errors.New("Could not find entry")
