@@ -16,13 +16,13 @@ func writeJSON(w http.ResponseWriter, status int, data any){
 }
 
 func (s *Server) GetAllTasks(w http.ResponseWriter, r *http.Request){
-	writeJSON(w, http.StatusOK, s.repo.GetAll())
+	writeJSON(w, http.StatusOK, s.service.GetAll(r.Context()))
 }
 
 
 func (s *Server) GetTask(w http.ResponseWriter, r *http.Request){
 	id := r.PathValue("id")
-	response, err := s.repo.GetByID(id)
+	response, err := s.service.GetByID(r.Context(), id)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, "")
 		return
@@ -36,7 +36,7 @@ func (s *Server) CreateTask (w http.ResponseWriter, r *http.Request){
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-	if err := s.repo.Create(newTask); err != nil {
+	if err := s.service.Create(r.Context(), newTask); err != nil {
 		writeJSON(w, http.StatusInternalServerError, "")
 		return
 	}
@@ -48,7 +48,7 @@ func (s *Server) CreateTask (w http.ResponseWriter, r *http.Request){
 
 func (s *Server) DeleteTask(w http.ResponseWriter, r *http.Request){
 	id := r.PathValue("id")
-	s.repo.Delete(id)
+	s.service.Delete(r.Context(), id)
 	writeJSON(w, http.StatusOK, models.Response{Status: "200 OK", Message: "Deleted"})
 }
 
@@ -62,7 +62,7 @@ func (s *Server) UpdateTask(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
-	s.repo.Update(id, newDetails)
+	s.service.Update(r.Context(), id, newDetails)
 	writeJSON(w, http.StatusOK, models.Response{Status: "200 OK", Message: "Edited"})
 
 }
