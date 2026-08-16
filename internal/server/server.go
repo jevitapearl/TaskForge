@@ -4,17 +4,18 @@ import (
 	"net/http"
 
 	"github.com/jevitapearl/TaskForge/internal/repository"
+	"github.com/jevitapearl/TaskForge/internal/service"
 )
 
 type Server struct {
-	mux   *http.ServeMux
-	repo *repository.MemoryRepository
+	mux     *http.ServeMux
+	service *service.TaskService
 }
 
 func New() *Server {
 	s := &Server{
-		mux:   http.NewServeMux(),
-		repo:	repository.New(),
+		mux:     http.NewServeMux(),
+		service: service.New(repository.New()),
 	}
 
 	s.routes()
