@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 
+	_ "github.com/lib/pq"
+
 	"github.com/jevitapearl/TaskForge/internal/server"
 )
 

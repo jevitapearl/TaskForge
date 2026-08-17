@@ -24,11 +24,11 @@ func (s *TaskService) GetByID(ctx context.Context, id string) (models.Task, erro
 }
 
 func (s *TaskService) Create(ctx context.Context, task models.TaskPayload) error {
-	return s.repo.Create(ctx, task)
+	return s.repo.Create(ctx, models.Task{Title: task.Title, Completed: task.Completed})
 }
 
 func (s *TaskService) Update(ctx context.Context, id string, task models.UpdatePayload) error {
-  return s.repo.Update(ctx, id, task)
+  return s.repo.Update(ctx, id, models.Task{ID: id, Title: task.Title, Completed: task.Completed})
 }
 
 func (s *TaskService) Delete(ctx context.Context, id string) error {
