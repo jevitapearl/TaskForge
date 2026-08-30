@@ -3,34 +3,36 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"log"
 
 	"github.com/jevitapearl/TaskForge/internal/models"
+	_ "github.com/lib/pq"
 )
 
 type PostgresRepository struct {
 	db *sql.DB
 }
 
-func New() *PostgresRepository {
-	db, err := sql.Open("postgres", "host=localhost dbname=taskforge user=postgres password=password sslmode=disable")
+func (pr *PostgresRepository) ExistsByTitle(ctx context.Context, title string) bool {
+	query := `SELECT EXISTS(SELECT 1 FROM tasks WHERE title=$1)`
+	var exists bool
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	pr.db.QueryRowContext(ctx, query, title).Scan(&exists)
+	return exists
+}
 
-	if err := db.Ping(); err != nil {
-		log.Fatal(err)
-	}
+func NewPostgresRepository(db *sql.DB) *PostgresRepository {
 	return &PostgresRepository{db: db}
 }
 
-func (pr *PostgresRepository) GetAll(ctx context.Context) []models.Task {
+func (pr *PostgresRepository) GetAll(ctx context.Context) ([]models.Task, error) {
+
 	query := `SELECT task_id, title, completed FROM tasks;`
 	rows, err := pr.db.QueryContext(ctx, query)
+
 	if err != nil {
-		return []models.Task{}
+		return nil, err
 	}
+
 	defer rows.Close()
 
 	response := make([]models.Task, 0)
@@ -39,15 +41,15 @@ func (pr *PostgresRepository) GetAll(ctx context.Context) []models.Task {
 		var task models.Task
 
 		if err := rows.Scan(&task.ID, &task.Title, &task.Completed); err != nil {
-			return []models.Task{}
+			return nil, err
 		}
 		response = append(response, task)
 	}
 
 	if err := rows.Err(); err != nil {
-		return []models.Task{}
+		return nil, err
 	}
-	return response
+	return response, nil
 }
 
 func (pr *PostgresRepository) GetByID(ctx context.Context, id string) (models.Task, error) {
@@ -72,7 +74,10 @@ func (pr *PostgresRepository) Create(ctx context.Context, task models.Task) erro
 func (pr *PostgresRepository) Update(ctx context.Context, id string, new models.Task) error {
 	query := `UPDATE tasks SET title=$1, completed=$2 WHERE task_id=$3`
 
-	if err := pr.db.QueryRowContext(ctx, query, new.Title, new.Completed, id); err != nil {
+	rows, err := pr.db.ExecContext(ctx, query, new.Title, new.Completed, id)
+	rowsAffected, _ := rows.RowsAffected()
+
+	if err != nil || rowsAffected == 0 {
 		return sql.ErrNoRows
 	}
 	return nil
@@ -81,7 +86,9 @@ func (pr *PostgresRepository) Update(ctx context.Context, id string, new models.
 func (pr *PostgresRepository) Delete(ctx context.Context, id string) error {
 	query := `DELETE FROM tasks WHERE task_id=$1`
 
-	if _, err := pr.db.ExecContext(ctx, query, id); err != nil {
+	rows, err := pr.db.ExecContext(ctx, query, id)
+	rowsAffected, err := rows.RowsAffected()
+	if err != nil || rowsAffected == 0 {
 		return sql.ErrNoRows
 	}
 	return nil

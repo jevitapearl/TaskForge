@@ -12,12 +12,12 @@ type Server struct {
 	service *service.TaskService
 }
 
-func New() *Server {
+func New(repo repository.TaskRepository) *Server {
+
 	s := &Server{
 		mux:     http.NewServeMux(),
-		service: service.New(repository.New()),
+		service: service.New(repo),
 	}
-
 	s.routes()
 
 	return s
