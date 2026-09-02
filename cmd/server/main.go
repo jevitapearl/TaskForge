@@ -25,7 +25,7 @@ func main() {
 	repo := repository.NewPostgresRepository(db)
 	s := server.New(repo)
 
-	wrapped := middleware.LoggingMiddleware(s.Router())
+	wrapped := middleware.LoggingMiddleware(middleware.RecoveryMiddleware(s.Router()))
 
 	log.Println("Server running on port 8080")
 	err = http.ListenAndServe(":8080", wrapped)
