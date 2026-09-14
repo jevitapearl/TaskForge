@@ -1,4 +1,4 @@
-package server
+package handler
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"github.com/jevitapearl/TaskForge/internal/models"
 )
 
-func (s *Server) Echo(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Echo(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -20,7 +20,5 @@ func (s *Server) Echo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	
-
-	json.NewEncoder(w).Encode(models.Response{Status: "OK", Message: req.Message})
+	json.NewEncoder(w).Encode(models.Response{Status: http.StatusAccepted, Message: req.Message})
 }

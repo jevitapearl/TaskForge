@@ -1,4 +1,4 @@
-package server
+package handler
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"github.com/jevitapearl/TaskForge/internal/models"
 )
 
-func (s *Server) Home(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		http.NotFound(w, r)
 		return
@@ -20,5 +20,5 @@ func (s *Server) Home(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	json.NewEncoder(w).Encode(models.Response{Status: "OK", Message: "Welcome to TaskForge"})
+	json.NewEncoder(w).Encode(models.Response{Status: http.StatusAccepted, Message: "Welcome to TaskForge"})
 }
