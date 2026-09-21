@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jevitapearl/TaskForge/internal/models"
 )
 
 type AuthRepository interface {
 	CreateUser(ctx context.Context, email, hash string) error
 	GetUserByEmail(ctx context.Context, email string) (*models.User, error)
-	GetUserByID(ctx context.Context, id int) (*models.User, error)
-	StoreRefreshToken(ctx context.Context, userID int, token string, expiresAt time.Time) error
+	GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error)
+	StoreRefreshToken(ctx context.Context, userID uuid.UUID, token string, expiresAt time.Time) error
 	GetRefreshToken(ctx context.Context, token string) (*models.RefreshToken, error)
 	DeleteRefreshToken(ctx context.Context, token string) error
 	RotateRefreshToken(ctx context.Context, oldToken string, newToken string, expiresAt time.Time) error
@@ -54,13 +55,15 @@ func (pr *PostgresRepository) GetUserByEmail(ctx context.Context, email string) 
 	).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Role)
 
 	if err != nil {
+		fmt.Println("Email not found in query")
+		fmt.Println(err)
 		return nil, err
 	}
 
 	return &user, nil
 }
 
-func (pr *PostgresRepository) GetUserByID(ctx context.Context, id int) (*models.User, error) {
+func (pr *PostgresRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*models.User, error) {
 
 	var user models.User
 
@@ -81,7 +84,7 @@ func (pr *PostgresRepository) GetUserByID(ctx context.Context, id int) (*models.
 	return &user, nil
 }
 
-func (pr *PostgresRepository) StoreRefreshToken(ctx context.Context, userID int, token string, expiresAt time.Time) error {
+func (pr *PostgresRepository) StoreRefreshToken(ctx context.Context, userID uuid.UUID, token string, expiresAt time.Time) error {
 
 	_, err := pr.db.ExecContext(
 		ctx,

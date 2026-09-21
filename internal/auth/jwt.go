@@ -3,29 +3,29 @@ package auth
 import (
 	"errors"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 type Claims struct {
-	UserID int    `json:"user_id"`
-	Role   string `json:"role"`
+	UserID uuid.UUID `json:"user_id"`
+	Role   string    `json:"role"`
 	jwt.RegisteredClaims
 }
 
 type RefreshClaims struct {
-	UserID int `json:"user_id"`
+	UserID uuid.UUID `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
-func GenerateAccessToken(userID int, role string) (string, error) {
+func GenerateAccessToken(userID uuid.UUID, role string) (string, error) {
 	claims := Claims{
 		UserID: userID,
 		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:   strconv.Itoa(userID),
+			Subject:   userID.String(),
 			Issuer:    "taskforge",
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
@@ -42,11 +42,11 @@ func GenerateAccessToken(userID int, role string) (string, error) {
 	)
 }
 
-func GenerateRefreshToken(userID int) (string, error) {
+func GenerateRefreshToken(userID uuid.UUID) (string, error) {
 	claims := RefreshClaims{
 		UserID: userID,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Subject:  strconv.Itoa(userID),
+			Subject:  userID.String(),
 			IssuedAt: jwt.NewNumericDate(time.Now()),
 			ExpiresAt: jwt.NewNumericDate(
 				time.Now().Add(7 * 24 * time.Hour),

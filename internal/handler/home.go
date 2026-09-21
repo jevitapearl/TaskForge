@@ -20,5 +20,5 @@ func (h *Handler) Home(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	json.NewEncoder(w).Encode(models.Response{Status: http.StatusAccepted, Message: "Welcome to TaskForge"})
+	json.NewEncoder(w).Encode(models.Response{Status: http.StatusOK, Message: "Welcome to TaskForge"})
 }

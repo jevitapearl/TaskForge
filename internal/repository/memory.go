@@ -53,9 +53,9 @@ func (m *MemoryRepository) Create(ctx context.Context, task models.Task) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.tasks = append(m.tasks, models.Task{
-		ID:        uuid.NewString(),
-		Title:     task.Title,
-		Completed: task.Completed,
+		ID:     uuid.NewString(),
+		Title:  task.Title,
+		Status: task.Status,
 	})
 	return nil
 }
@@ -71,7 +71,7 @@ func (m *MemoryRepository) Update(ctx context.Context, id string, new models.Tas
 	}
 
 	m.tasks[i].Title = new.Title
-	m.tasks[i].Completed = new.Completed
+	m.tasks[i].Status = new.Status
 	return nil
 }
 
