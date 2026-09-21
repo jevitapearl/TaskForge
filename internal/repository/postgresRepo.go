@@ -26,7 +26,7 @@ func NewPostgresRepository(db *sql.DB) *PostgresRepository {
 
 func (pr *PostgresRepository) GetAll(ctx context.Context) ([]models.Task, error) {
 
-	query := `SELECT task_id, title, completed FROM tasks;`
+	query := `SELECT task_id, title, status FROM tasks;`
 	rows, err := pr.db.QueryContext(ctx, query)
 
 	if err != nil {
@@ -40,7 +40,7 @@ func (pr *PostgresRepository) GetAll(ctx context.Context) ([]models.Task, error)
 	for rows.Next() {
 		var task models.Task
 
-		if err := rows.Scan(&task.ID, &task.Title, &task.Completed); err != nil {
+		if err := rows.Scan(&task.ID, &task.Title, &task.Status); err != nil {
 			return nil, err
 		}
 		response = append(response, task)
@@ -56,25 +56,25 @@ func (pr *PostgresRepository) GetByID(ctx context.Context, id string) (models.Ta
 	query := `SELECT task_id, title, completed FROM tasks WHERE task_id=$1`
 
 	var response models.Task
-	if err := pr.db.QueryRowContext(ctx, query, id).Scan(&response.ID, &response.Title, &response.Completed); err != nil {
+	if err := pr.db.QueryRowContext(ctx, query, id).Scan(&response.ID, &response.Title, &response.Status); err != nil {
 		return models.Task{}, err
 	}
 	return response, nil
 }
 
 func (pr *PostgresRepository) Create(ctx context.Context, task models.Task) error {
-	query := `INSERT INTO tasks(title, completed) VALUES($1, $2)`
+	query := `INSERT INTO tasks(title, status) VALUES($1, $2)`
 
-	if _, err := pr.db.ExecContext(ctx, query, task.Title, task.Completed); err != nil {
+	if _, err := pr.db.ExecContext(ctx, query, task.Title, task.Status); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (pr *PostgresRepository) Update(ctx context.Context, id string, new models.Task) error {
-	query := `UPDATE tasks SET title=$1, completed=$2 WHERE task_id=$3`
+	query := `UPDATE tasks SET title=$1, status=$2 WHERE task_id=$3`
 
-	rows, err := pr.db.ExecContext(ctx, query, new.Title, new.Completed, id)
+	rows, err := pr.db.ExecContext(ctx, query, new.Title, new.Status, id)
 	rowsAffected, _ := rows.RowsAffected()
 
 	if err != nil || rowsAffected == 0 {

@@ -37,7 +37,7 @@ func (h *Handler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	WriteJSON(w, http.StatusCreated, models.Response{Status: http.StatusAccepted, Message: "Created"})
+	WriteJSON(w, http.StatusCreated, models.Response{Status: http.StatusOK, Message: "Created"})
 
 }
 
@@ -47,7 +47,7 @@ func (h *Handler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
-	WriteJSON(w, http.StatusOK, models.Response{Status: http.StatusAccepted, Message: "Deleted"})
+	WriteJSON(w, http.StatusOK, models.Response{Status: http.StatusOK, Message: "Deleted"})
 }
 
 func (h *Handler) UpdateTask(w http.ResponseWriter, r *http.Request) {
@@ -63,6 +63,6 @@ func (h *Handler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
-	WriteJSON(w, http.StatusOK, models.Response{Status: http.StatusAccepted, Message: "Edited"})
+	WriteJSON(w, http.StatusOK, models.Response{Status: http.StatusOK, Message: "Edited"})
 
 }

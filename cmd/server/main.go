@@ -34,13 +34,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-
 	// DB init
 	db, err := database.NewPostgres(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 
 	// Router init
 	repo := repository.NewPostgresRepository(db)

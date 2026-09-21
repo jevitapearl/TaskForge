@@ -38,26 +38,17 @@ func (s *AuthService) Login(ctx context.Context, email string, password string) 
 		return "", "", errors.New("invalid credentials")
 	}
 
-	if !auth.VerifyPassword(
-		password,
-		user.PasswordHash,
-	) {
+	if !auth.VerifyPassword(password, user.PasswordHash) {
 		return "", "", errors.New("invalid credentials")
 	}
 
-	accessToken, err := auth.GenerateAccessToken(
-		user.ID,
-		user.Role,
-	)
+	accessToken, err := auth.GenerateAccessToken(user.ID, user.Role)
 
 	if err != nil {
 		return "", "", err
 	}
 
-	refreshToken, err :=
-		auth.GenerateRefreshToken(
-			user.ID,
-		)
+	refreshToken, err := auth.GenerateRefreshToken(user.ID)
 
 	if err != nil {
 		return "", "", err
@@ -67,18 +58,14 @@ func (s *AuthService) Login(ctx context.Context, email string, password string) 
 		ctx,
 		user.ID,
 		refreshToken,
-		time.Now().Add(
-			7*24*time.Hour,
-		),
+		time.Now().Add(7*24*time.Hour),
 	)
 
 	if err != nil {
 		return "", "", err
 	}
 
-	return accessToken,
-		refreshToken,
-		nil
+	return accessToken, refreshToken, nil
 }
 
 func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (string, string, error) {
@@ -123,9 +110,7 @@ func (s *AuthService) Refresh(ctx context.Context, refreshToken string) (string,
 		return "", "", err
 	}
 
-	return accessToken,
-		newRefreshToken,
-		nil
+	return accessToken, newRefreshToken, nil
 }
 
 func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {

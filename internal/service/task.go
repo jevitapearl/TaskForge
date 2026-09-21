@@ -44,11 +44,11 @@ func (s *TaskService) Create(ctx context.Context, task models.TaskPayload) error
 	if s.ExistsByTitle(ctx, task.Title) {
 		return ErrDuplicateTitle
 	}
-	return s.repo.Create(ctx, models.Task{Title: task.Title, Completed: task.Completed})
+	return s.repo.Create(ctx, models.Task{Title: task.Title, Status: task.Status})
 }
 
 func (s *TaskService) Update(ctx context.Context, id string, task models.UpdatePayload) error {
-	return s.repo.Update(ctx, id, models.Task{ID: id, Title: task.Title, Completed: task.Completed})
+	return s.repo.Update(ctx, id, models.Task{ID: id, Title: task.Title, Status: task.Status})
 }
 
 func (s *TaskService) Delete(ctx context.Context, id string) error {

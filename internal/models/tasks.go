@@ -1,17 +1,17 @@
 package models
 
 type Task struct {
-	ID        string `json:"task_id"`
-	Title     string `json:"title"`
-	Completed bool   `json:"completed"`
+	ID     string `json:"task_id"`
+	Title  string `json:"title"`
+	Status bool   `json:"status"`
 }
 
 type TaskPayload struct {
-	Title     string `json:"title"`
-	Completed bool   `json:"completed"`
+	Title  string `json:"title"`
+	Status bool   `json:"status"`
 }
 
 type UpdatePayload struct {
-	Title     string `json:"title"`
-	Completed bool   `json:"completed"`
+	Title  string `json:"title"`
+	Status bool   `json:"status"`
 }
