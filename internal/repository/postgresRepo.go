@@ -24,10 +24,10 @@ func NewPostgresRepository(db *sql.DB) *PostgresRepository {
 	return &PostgresRepository{db: db}
 }
 
-func (pr *PostgresRepository) GetAll(ctx context.Context) ([]models.Task, error) {
+func (pr *PostgresRepository) GetAll(ctx context.Context, userID string) ([]models.Task, error) {
 
-	query := `SELECT task_id, title, status FROM tasks;`
-	rows, err := pr.db.QueryContext(ctx, query)
+	query := `SELECT task_id, title, status FROM tasks WHERE user_id=$1;`
+	rows, err := pr.db.QueryContext(ctx, query, userID)
 
 	if err != nil {
 		return nil, err
@@ -52,29 +52,29 @@ func (pr *PostgresRepository) GetAll(ctx context.Context) ([]models.Task, error)
 	return response, nil
 }
 
-func (pr *PostgresRepository) GetByID(ctx context.Context, id string) (models.Task, error) {
-	query := `SELECT task_id, title, completed FROM tasks WHERE task_id=$1`
+func (pr *PostgresRepository) GetByID(ctx context.Context, userID string, id string) (models.Task, error) {
+	query := `SELECT task_id, title, completed FROM tasks WHERE task_id=$1 AND user_id=$2`
 
 	var response models.Task
-	if err := pr.db.QueryRowContext(ctx, query, id).Scan(&response.ID, &response.Title, &response.Status); err != nil {
+	if err := pr.db.QueryRowContext(ctx, query, id, userID).Scan(&response.ID, &response.Title, &response.Status); err != nil {
 		return models.Task{}, err
 	}
 	return response, nil
 }
 
-func (pr *PostgresRepository) Create(ctx context.Context, task models.Task) error {
-	query := `INSERT INTO tasks(title, status) VALUES($1, $2)`
+func (pr *PostgresRepository) Create(ctx context.Context, userID string, task models.Task) error {
+	query := `INSERT INTO tasks(title, status, user_id) VALUES($1, $2, $3)`
 
-	if _, err := pr.db.ExecContext(ctx, query, task.Title, task.Status); err != nil {
+	if _, err := pr.db.ExecContext(ctx, query, task.Title, task.Status, userID); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (pr *PostgresRepository) Update(ctx context.Context, id string, new models.Task) error {
-	query := `UPDATE tasks SET title=$1, status=$2 WHERE task_id=$3`
+func (pr *PostgresRepository) Update(ctx context.Context, userID string, id string, new models.Task) error {
+	query := `UPDATE tasks SET title=$1, status=$2 WHERE task_id=$3 AND user_id=$4`
 
-	rows, err := pr.db.ExecContext(ctx, query, new.Title, new.Status, id)
+	rows, err := pr.db.ExecContext(ctx, query, new.Title, new.Status, id, userID)
 	rowsAffected, _ := rows.RowsAffected()
 
 	if err != nil || rowsAffected == 0 {
@@ -83,10 +83,10 @@ func (pr *PostgresRepository) Update(ctx context.Context, id string, new models.
 	return nil
 }
 
-func (pr *PostgresRepository) Delete(ctx context.Context, id string) error {
-	query := `DELETE FROM tasks WHERE task_id=$1`
+func (pr *PostgresRepository) Delete(ctx context.Context, userID string, id string) error {
+	query := `DELETE FROM tasks WHERE task_id=$1 AND user_id=$2`
 
-	rows, err := pr.db.ExecContext(ctx, query, id)
+	rows, err := pr.db.ExecContext(ctx, query, id, userID)
 	rowsAffected, err := rows.RowsAffected()
 	if err != nil || rowsAffected == 0 {
 		return sql.ErrNoRows
