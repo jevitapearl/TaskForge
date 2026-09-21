@@ -8,7 +8,7 @@ import (
 )
 
 func (h *Handler) GetAllTasks(w http.ResponseWriter, r *http.Request) {
-	response, err := h.service.GetAll(r.Context())
+	response, err := h.service.GetAll(r.Context(), r.Context().Value("userID").(string))
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -18,7 +18,7 @@ func (h *Handler) GetAllTasks(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetTask(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	response, err := h.service.GetByID(r.Context(), id)
+	response, err := h.service.GetByID(r.Context(), r.Context().Value("userID").(string), id)
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -32,7 +32,7 @@ func (h *Handler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
-	if err := h.service.Create(r.Context(), newTask); err != nil {
+	if err := h.service.Create(r.Context(), r.Context().Value("userID").(string), newTask); err != nil {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
@@ -43,7 +43,7 @@ func (h *Handler) CreateTask(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	if err := h.service.Delete(r.Context(), id); err != nil {
+	if err := h.service.Delete(r.Context(), r.Context().Value("userID").(string), id); err != nil {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
@@ -59,7 +59,7 @@ func (h *Handler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.Update(r.Context(), id, newDetails); err != nil {
+	if err := h.service.Update(r.Context(), r.Context().Value("userID").(string), id, newDetails); err != nil {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}

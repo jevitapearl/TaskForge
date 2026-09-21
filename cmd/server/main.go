@@ -25,7 +25,19 @@ func main() {
 	}
 
 	// Migrations
-	m, err := migrate.New("file://internal/migrations", fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", cfg.User, cfg.Password, cfg.Host, cfg.DBName))
+
+	m, err := migrate.New(
+		"file://internal/migrations",
+		fmt.Sprintf(
+			"postgres://%s:%s@%s:%v/%s?sslmode=disable",
+			cfg.User,
+			cfg.Password,
+			cfg.Host,
+			cfg.DBPort,
+			cfg.DBName,
+		),
+	)
+
 	if err != nil {
 		log.Fatal(err)
 	}
