@@ -30,7 +30,7 @@ func New(repo *repository.PostgresRepository) *Router {
 
 	mux.HandleFunc("POST /register", h.Register)
 	mux.HandleFunc("POST /login", h.Login)
-	mux.Handle("POST /refresh", middleware.AuthMiddleware(http.HandlerFunc(h.Refresh)))
+	mux.HandleFunc("POST /refresh", h.Refresh)
 	mux.HandleFunc("POST /logout", h.Logout)
 
 	return &Router{
