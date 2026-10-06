@@ -2,12 +2,14 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/jevitapearl/TaskForge/internal/models"
 )
 
 func (h *Handler) GetAllTasks(w http.ResponseWriter, r *http.Request) {
+	fmt.Println(r.URL.Query())
 	response, err := h.service.GetAll(r.Context(), r.Context().Value("userID").(string))
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
@@ -32,6 +34,7 @@ func (h *Handler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
+	
 	if err := h.service.Create(r.Context(), r.Context().Value("userID").(string), newTask); err != nil {
 		WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return

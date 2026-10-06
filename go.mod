@@ -10,5 +10,3 @@ require (
 	github.com/lib/pq v1.12.3
 	golang.org/x/crypto v0.57.0
 )
-
-require github.com/gofrs/uuid v4.4.0+incompatible // indirect

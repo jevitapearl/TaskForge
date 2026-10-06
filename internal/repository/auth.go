@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,8 +19,6 @@ type AuthRepository interface {
 }
 
 func (pr *PostgresRepository) CreateUser(ctx context.Context, email string, hash string) error {
-
-	fmt.Println("Query started")
 	_, err := pr.db.ExecContext(
 		ctx,
 		`
@@ -33,10 +30,9 @@ func (pr *PostgresRepository) CreateUser(ctx context.Context, email string, hash
 	)
 
 	if err != nil {
-		fmt.Println("DB error")
+		return err
 	}
 
-	fmt.Println("user created", err)
 	return err
 }
 
@@ -55,8 +51,6 @@ func (pr *PostgresRepository) GetUserByEmail(ctx context.Context, email string) 
 	).Scan(&user.ID, &user.Email, &user.PasswordHash, &user.Role)
 
 	if err != nil {
-		fmt.Println("Email not found in query")
-		fmt.Println(err)
 		return nil, err
 	}
 
@@ -144,7 +138,7 @@ func (pr *PostgresRepository) RotateRefreshToken(ctx context.Context, oldToken s
 
 	defer tx.Rollback()
 
-	var userID int
+	var userID uuid.UUID
 
 	err = tx.QueryRowContext(
 		ctx,
