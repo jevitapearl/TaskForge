@@ -9,17 +9,10 @@ import (
 	"github.com/jevitapearl/TaskForge/internal/models"
 )
 
-type contextKey string
-
-const (
-	UserIDKey contextKey = "userID"
-	RoleKey   contextKey = "role"
-)
-
 func AuthMiddleware(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
+		ctx := r.Context()
 		cookie, err := r.Cookie("access_token")
 
 		if err != nil {
@@ -34,8 +27,8 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
-		ctx = context.WithValue(ctx, RoleKey, claims.Role)
+		ctx = context.WithValue(ctx, "userID", claims.UserID)
+		ctx = context.WithValue(ctx, "role", claims.Role)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
