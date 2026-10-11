@@ -12,6 +12,12 @@ type TaskPayload struct {
 }
 
 type UpdatePayload struct {
-	Title     string `json:"title"`
-	Completed bool   `json:"completed"`
+	Title  string `json:"title"`
+	Status bool   `json:"status"`
+}
+
+type TaskFilter struct {
+	Limit     int
+	Page      int
+	Completed *bool
 }
