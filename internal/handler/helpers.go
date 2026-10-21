@@ -1,19 +1,15 @@
 package handler
 
 import (
-	"context"
 	"net/http"
+
+	"github.com/jevitapearl/TaskForge/internal/contextx"
 )
 
-type contextKey string
-
-const userIDKey contextKey = "userID"
-
 func getUserID(r *http.Request) string {
-	userID, _ := r.Context().Value(userIDKey).(string)
-	return userID
+	return contextx.UserID(r.Context())
 }
 
-func setUserID(ctx context.Context, userID string) context.Context {
-	return context.WithValue(ctx, userIDKey, userID)
+func getUserRole(r *http.Request) string {
+	return contextx.UserRole(r.Context())
 }

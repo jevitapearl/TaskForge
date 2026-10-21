@@ -12,11 +12,7 @@ type PostgresRepository struct {
 	db *sql.DB
 }
 
-func (pr *PostgresRepository) ExistsByTitle(
-	ctx context.Context,
-	userID string,
-	title string,
-) (bool, error) {
+func (pr *PostgresRepository) ExistsByTitle(ctx context.Context, userID string, title string) (bool, error) {
 
 	query := `
 		SELECT EXISTS(
@@ -51,13 +47,20 @@ func (pr *PostgresRepository) GetAll(ctx context.Context, userID string, filter 
 
 	offset := filter.Page * filter.Limit
 
+	sort := map[string]string{
+		"created_at": "created_at",
+		"modified":   "updated_at",
+		"title":      "title",
+		"":           "task_id",
+	}
+
 	query := `
 		SELECT task_id, title, status
 		FROM tasks
 		WHERE user_id = $1
 		AND ($2::boolean IS NULL OR status = $2)
-		ORDER BY task_id
-		LIMIT $3 OFFSET $4
+		ORDER BY $3
+		LIMIT $4 OFFSET $5
 	`
 
 	rows, err := pr.db.QueryContext(
@@ -65,6 +68,7 @@ func (pr *PostgresRepository) GetAll(ctx context.Context, userID string, filter 
 		query,
 		userID,
 		filter.Completed,
+		sort[filter.SortBy],
 		filter.Limit,
 		offset,
 	)
@@ -154,7 +158,11 @@ func (pr *PostgresRepository) Create(
 
 func (pr *PostgresRepository) Update(ctx context.Context, userID string, id string, task models.Task) error {
 
-	query := `UPDATE tasks SET title = $1, status = $2 WHERE task_id = $3 AND user_id = $4`
+	query := `
+		UPDATE tasks 
+		SET title = $1, status = $2, updated_at = NOW()
+		WHERE task_id = $3 AND user_id = $4
+	`
 
 	result, err := pr.db.ExecContext(ctx, query, task.Title, task.Status, id, userID)
 

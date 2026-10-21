@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/jevitapearl/TaskForge/internal/contextx"
 )
 
 type StatusRecorder struct {
@@ -25,8 +27,13 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		}
 
 		start := time.Now()
-		next.ServeHTTP(recorder, r)  
+		next.ServeHTTP(recorder, r)
 
-		log.Printf("%s | %s | %v | %v", r.Method, r.URL.Path, recorder.StatusCode, time.Since(start))
+		userID := contextx.UserID(r.Context())
+		if userID == "" {
+			userID = "anonymous"
+		}
+
+		log.Printf("user_id=%s | method=%s | path=%s | status=%v | time=%v", userID, r.Method, r.URL.Path, recorder.StatusCode, time.Since(start))
 	})
 }

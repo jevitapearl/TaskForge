@@ -57,7 +57,7 @@ func main() {
 	r := router.New(repo)
 
 	// Middleware wrapping
-	wrapped := middleware.LoggingMiddleware(middleware.RecoveryMiddleware(r.Handler()))
+	wrapped := middleware.RecoveryMiddleware(r.Handler())
 
 	// Serving HTTP req
 	log.Println("Server running on port 8080")

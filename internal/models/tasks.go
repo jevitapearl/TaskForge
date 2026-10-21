@@ -19,5 +19,6 @@ type UpdatePayload struct {
 type TaskFilter struct {
 	Limit     int
 	Page      int
-	Completed *bool
+	Completed bool
+	SortBy    string
 }

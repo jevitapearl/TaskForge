@@ -37,7 +37,7 @@ func (h *Handler) GetAllTasks(w http.ResponseWriter, r *http.Request) {
 		page = n
 	}
 
-	var completed *bool
+	var completed bool
 
 	if value := r.URL.Query().Get("completed"); value != "" {
 		v, err := strconv.ParseBool(value)
@@ -48,13 +48,24 @@ func (h *Handler) GetAllTasks(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		completed = &v
+		completed = v
+	}
+
+	var sort string
+	if value := r.URL.Query().Get("sort"); value != "" {
+		if value != "created_at" && value != "title" && value != "modified" {
+			WriteJSON(w, http.StatusBadRequest, map[string]string{
+				"error": "invalid sort value",
+			})
+			return
+		}
 	}
 
 	filter := models.TaskFilter{
 		Limit:     limit,
 		Page:      page,
 		Completed: completed,
+		SortBy:    sort,
 	}
 
 	userID := getUserID(r)
@@ -70,7 +81,6 @@ func (h *Handler) GetAllTasks(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, response)
 }
 
-
 func (h *Handler) GetTask(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	userID := getUserID(r)
@@ -82,13 +92,12 @@ func (h *Handler) GetTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err != nil {
-		WriteError(w, http.StatusInternalServerError, "internal server error") 
+		WriteError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	WriteJSON(w, http.StatusOK, task)
 }
-
 
 func (h *Handler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	var task models.TaskPayload
@@ -129,14 +138,14 @@ func (h *Handler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	err := h.service.Delete(r.Context(), getUserID(r), id)
 
 	if errors.Is(err, sql.ErrNoRows) {
-			WriteError(w, http.StatusNotFound, "task not found")
-			return
+		WriteError(w, http.StatusNotFound, "task not found")
+		return
 	}
 
 	if err != nil {
-			WriteError(w, http.StatusInternalServerError,
-					"internal server error")
-			return
+		WriteError(w, http.StatusInternalServerError,
+			"internal server error")
+		return
 	}
 	WriteJSON(w, http.StatusOK, models.Response{Status: http.StatusOK, Message: "Deleted"})
 }
@@ -159,9 +168,9 @@ func (h *Handler) UpdateTask(
 	err := h.service.Update(r.Context(), userID, id, payload)
 
 	if errors.Is(err, service.ErrEmptyTitle) ||
-			errors.Is(err, service.ErrTitleTooLong) {
-			WriteError(w, http.StatusBadRequest, err.Error())
-			return
+		errors.Is(err, service.ErrTitleTooLong) {
+		WriteError(w, http.StatusBadRequest, err.Error())
+		return
 	}
 
 	if err != nil {

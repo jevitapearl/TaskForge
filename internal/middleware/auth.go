@@ -1,10 +1,10 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/jevitapearl/TaskForge/internal/auth"
+	"github.com/jevitapearl/TaskForge/internal/contextx"
 	"github.com/jevitapearl/TaskForge/internal/handler"
 	"github.com/jevitapearl/TaskForge/internal/models"
 )
@@ -12,7 +12,6 @@ import (
 func AuthMiddleware(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
 		cookie, err := r.Cookie("access_token")
 
 		if err != nil {
@@ -27,8 +26,10 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx = context.WithValue(ctx, "userID", claims.UserID)
-		ctx = context.WithValue(ctx, "role", claims.Role)
+		ctx := contextx.SetUser(r.Context(), contextx.User{
+			ID:   claims.UserID.String(),
+			Role: claims.Role,
+		})
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
