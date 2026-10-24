@@ -1,9 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/jevitapearl/TaskForge/internal/config"
@@ -42,6 +47,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	defer m.Close()
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		log.Fatal(err)
 	}
@@ -59,11 +65,38 @@ func main() {
 	// Middleware wrapping
 	wrapped := middleware.RecoveryMiddleware(r.Handler())
 
-	// Serving HTTP req
-	log.Println("Server running on port 8080")
-	err = http.ListenAndServe(":8080", wrapped)
-	if err != nil {
-		panic(err)
+	server := &http.Server{
+		Addr:    ":8080",
+		Handler: wrapped,
 	}
+
+	// Serving HTTP req
+
+	sigCh := make(chan os.Signal, 1)
+
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		log.Println("Server running on port 8080")
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Println("Server stopped:", err)
+		}
+	}()
+
+	sig := <-sigCh
+	log.Println("Shutdown signal received:", sig)
+
+	shutdownCtx, cancel := context.WithTimeout(
+		context.Background(),
+		10*time.Second,
+	)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Println("Graceful shutdown failed:", err)
+	}
+
+	db.Close()
+	log.Println("Server shutdown complete")
 
 }
