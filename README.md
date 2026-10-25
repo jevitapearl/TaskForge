@@ -2,7 +2,7 @@
 
 TaskForge is a REST API built in Go to learn backend development from the ground up, using the Go standard library for the HTTP layer and a small set of well-known libraries for the pieces the standard library does not cover.
 
-The goal of this project is not just to build an application, but to understand how backend systems work internally — covering HTTP, JSON, routing, request handling, error handling, databases, authentication, authorization, middleware, migrations, and testing.
+The goal of this project is not just to build an application, but to understand how backend systems work internally covering HTTP, JSON, routing, request handling, error handling, databases, authentication, authorization, middleware, migrations, and testing.
 
 ---
 
