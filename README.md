@@ -17,8 +17,10 @@ The goal of this project is not just to build an application, but to understand 
 * JWT authentication with short-lived access tokens and rotating refresh tokens stored in `HttpOnly` cookies
 * bcrypt password hashing
 * Per-user task ownership — every task query is scoped to the authenticated user
-* Middleware: request logging, panic recovery, and authentication
+* Middleware: request logging (including `user_id`), panic recovery, and authentication
 * Task CRUD with pagination and filtering query parameters
+* Graceful shutdown on `SIGINT` / `SIGTERM` with a 10-second drain timeout
+* Docker and Docker Compose setup for the API and PostgreSQL
 
 ---
 
@@ -35,6 +37,7 @@ The goal of this project is not just to build an application, but to understand 
 | Password hashing | `golang.org/x/crypto/bcrypt` |
 | IDs | `google/uuid` + PostgreSQL `pgcrypto` |
 | Config | `joho/godotenv` |
+| Containerization | Docker + Docker Compose |
 
 No web framework or third-party router is used — routing, middleware, and the request lifecycle are all hand-rolled on top of the standard library.
 
@@ -46,7 +49,7 @@ No web framework or third-party router is used — routing, middleware, and the 
 .
 ├── cmd/
 │   └── server/
-│       └── main.go          # entrypoint: config → migrations → db → router → server
+│       └── main.go          # entrypoint: config → migrations → db → router → server → shutdown
 ├── internal/
 │   ├── auth/                # JWT generation/validation, bcrypt hashing
 │   ├── config/              # .env loading
@@ -60,6 +63,9 @@ No web framework or third-party router is used — routing, middleware, and the 
 │   ├── router/              # route table
 │   └── service/             # business logic
 ├── .env                     # local config (git-ignored)
+├── .env.example             # config template
+├── docker-compose.yaml      # API + PostgreSQL services
+├── dockerfile               # API image
 ├── .gitignore
 ├── go.mod
 ├── go.sum
@@ -72,9 +78,8 @@ No web framework or third-party router is used — routing, middleware, and the 
 
 ### Prerequisites
 
-* Go 1.26+ (check with `go version`)
-* PostgreSQL 12+ running locally
-* `psql` client (optional, for creating the database)
+* Docker and Docker Compose (for the containerized setup), or
+* Go 1.26+ and PostgreSQL 12+ (for running locally)
 
 ### 1. Clone the Repository
 
@@ -83,39 +88,54 @@ git clone https://github.com/jevitapearl/TaskForge.git
 cd TaskForge
 ```
 
-### 2. Create the Database
+### 2. Configure the Environment
+
+Copy the template and edit the values:
+
+```bash
+cp .env.example .env
+```
+
+```bash
+PORT=8080
+DBUSER=postgres
+DBPASSWORD=change_me
+HOST=postgres
+DBNAME=taskforge
+DBPORT=5432
+JWT_SECRET=change_me_to_a_long_random_string
+```
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `DBUSER` | yes | PostgreSQL user; also used as `POSTGRES_USER` by Compose |
+| `DBPASSWORD` | yes | PostgreSQL password; also used as `POSTGRES_PASSWORD` by Compose |
+| `HOST` | yes | `postgres` when using Compose (the service name), `localhost` for a local PostgreSQL install |
+| `DBPORT` | yes | PostgreSQL port (parsed as an integer); use `5432` in both setups |
+| `DBNAME` | yes | Database name; also used as `POSTGRES_DB` by Compose |
+| `JWT_SECRET` | yes | HMAC secret used to sign access and refresh tokens |
+| `PORT` | no | Included in `.env.example` for Compose parity but not read by the server — the HTTP port is fixed at `8080` in `cmd/server/main.go` |
+
+`.env` is git-ignored. Use a long, random `JWT_SECRET` outside local development.
+
+### 3. Run with Docker Compose
+
+```bash
+docker compose up --build
+```
+
+This starts PostgreSQL, waits for it to become healthy, builds the API image, applies pending migrations, and exposes the API at `http://localhost:8080`. PostgreSQL is published on host port `5433` (container port `5432`) to avoid clashing with a local installation. Data is stored in the `taskforge_pgdata` volume and survives `docker compose down`; use `docker compose down -v` to delete it.
+
+### 4. Run Locally
+
+Create the database for your local role:
 
 ```bash
 createuser taskforge
 createdb -O taskforge taskforge
 ```
 
-If you use a different role or database name, just make sure the values in `.env` match your local setup.
-
-### 3. Configure the Environment
-
-Create a `.env` file in the project root:
-
-```bash
-DBUSER=taskforge
-DBPASSWORD=your_password
-HOST=localhost
-DBPORT=5432
-DBNAME=taskforge
-JWT_SECRET=change_me_to_a_long_random_string
-```
-
-| Variable | Required | Description |
-| --- | --- | --- |
-| `DBUSER` | yes | PostgreSQL user |
-| `DBPASSWORD` | yes | PostgreSQL password |
-| `HOST` | yes | PostgreSQL host |
-| `DBPORT` | yes | PostgreSQL port (parsed as an integer) |
-| `DBNAME` | yes | Database name |
-| `JWT_SECRET` | yes | HMAC secret used to sign access and refresh tokens |
-| `PORT` | no | Not read by the server — the HTTP port is fixed at `8080` in `cmd/server/main.go` |
-
-### 4. Run the Server
+Then set `HOST=localhost`, `DBUSER=taskforge`, and the matching password/name in `.env`, and run:
 
 ```bash
 go mod tidy
@@ -128,7 +148,7 @@ On startup the server applies any pending migrations from `internal/migrations`,
 http://localhost:8080
 ```
 
-Verify it is up:
+Send `Ctrl+C` (or `SIGTERM`) to trigger a graceful shutdown with a 10-second drain timeout. Verify the server is up:
 
 ```bash
 curl http://localhost:8080/health
@@ -138,11 +158,13 @@ curl http://localhost:8080/health
 
 ## Database & Migrations
 
-Migrations live in `internal/migrations` and are applied automatically on boot via `golang-migrate` (`file://internal/migrations`). To apply them manually:
+Migrations live in `internal/migrations` and are applied automatically on boot via `golang-migrate` (`file://internal/migrations`), both with `go run` and in the Docker image. To apply them manually against a local PostgreSQL install:
 
 ```bash
 migrate -path internal/migrations -database "postgres://taskforge:your_password@localhost:5432/taskforge?sslmode=disable" up
 ```
+
+When connecting from the host to the Compose-managed database, use port `5433` instead of `5432`.
 
 | Version | Description |
 | --- | --- |
@@ -466,10 +488,9 @@ HTTP request
 RecoveryMiddleware          panic → 500 instead of a dropped connection
    │
    ▼
-LoggingMiddleware           logs method, path, status, duration, user_id
-   │
-   ▼
-AuthMiddleware (protected)  validates the access_token cookie, injects the user into the context
+Route-level middleware
+   ├── public routes:      LoggingMiddleware
+   └── protected routes:   AuthMiddleware → LoggingMiddleware
    │
    ▼
 Router / Handler            decode + validate the request, write the response
@@ -490,6 +511,9 @@ Every layer only talks to the one below it. Handlers never touch the database, a
 | `RecoveryMiddleware` | Catches panics and returns `500 Internal Server Error` |
 | `LoggingMiddleware` | Logs `user_id`, method, path, status code and duration |
 | `AuthMiddleware` | Reads the `access_token` cookie, validates the JWT, and stores the user id/role in the request context |
+| `Protected` | Composes `AuthMiddleware` around `LoggingMiddleware` for protected routes, so logs include the authenticated `user_id` |
+
+On shutdown, `main` stops accepting new connections, waits up to 10 seconds for in-flight requests, then closes the database.
 
 ---
 
@@ -515,8 +539,8 @@ Remaining work planned for this project:
 * Rate limiting and brute-force protection on the auth endpoints
 * Pagination metadata in the list response
 * Roles and authorization beyond "owns the resource"
-* Docker support (app + database) and CI
-* Production-ready deployment (graceful shutdown, structured logging, metrics)
+* CI pipeline and published container images
+* Production hardening: structured logging, metrics, tracing, and `Secure` / `SameSite` cookie flags
 
 ---
 
