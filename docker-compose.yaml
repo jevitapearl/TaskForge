@@ -1,0 +1,37 @@
+services:
+  api:
+    container_name: taskforge-api
+    build: .
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: ${PORT}
+      DBUSER: ${DBUSER}
+      DBPASSWORD: ${DBPASSWORD}
+      HOST: postgres
+      DBNAME: ${DBNAME}
+      DBPORT: 5432
+      JWT_SECRET: ${JWT_SECRET}
+
+  postgres:
+    container_name: taskforge-db
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${DBUSER}
+      POSTGRES_PASSWORD: ${DBPASSWORD}
+      POSTGRES_DB: ${DBNAME}
+    ports:
+      - "5433:5432"
+    volumes:
+      - taskforge_pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DBUSER} -d ${DBNAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  taskforge_pgdata:
